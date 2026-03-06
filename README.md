@@ -11,6 +11,23 @@ tree targets like `@skills//raw/screenshot:tree`. Those raw trees can then be:
 - staged into an install tree
 - synced back into `.claude/skills` or another source-tree directory
 
+## Why this exists
+
+Many teams using agent skills have requirements that the vendor-managed
+marketplaces do not satisfy:
+
+- We use both Codex and Claude, so relying on one vendor's marketplace does not
+  give us a single source of truth that works across both environments.
+- Pulling arbitrary third-party skills directly into application repos is a
+  security risk. We want pinned archives, reviewed lockfiles, and explicit Bazel
+  configuration in source control.
+- We already depend on upstream skill repositories, but we also need to follow
+  upstream updates while applying repo-local patches or overlays where needed.
+
+`skills.bzl` exists to make that workflow explicit: pin upstream content,
+represent it as normal Bazel artifacts, patch it in the build graph, and sync it
+into the on-disk agent directories only when needed.
+
 ## bzlmod
 
 ```starlark
