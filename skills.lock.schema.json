@@ -12,7 +12,14 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["owner", "repo", "commit", "sha256", "strip_prefix", "entries"],
+        "required": [
+          "owner",
+          "repo",
+          "commit",
+          "sha256",
+          "strip_prefix",
+          "entries"
+        ],
         "properties": {
           "kind": {
             "type": "string",

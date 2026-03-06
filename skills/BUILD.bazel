@@ -7,6 +7,7 @@ bzl_library(
     srcs = ["defs.bzl"],
     deps = [
         "//skills/private:stage",
+        "@bazel_lib//lib:copy_directory",
         "@bazel_lib//lib:copy_to_directory",
         "@rules_shell//shell:rules_bzl",
     ],
