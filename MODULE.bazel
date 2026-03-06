@@ -3,7 +3,7 @@
 module(
     name = "skills.bzl",
     version = "",
-    bazel_compatibility = [">=8.0.0"],
+    bazel_compatibility = [">=9.0.0"],
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
@@ -19,7 +19,14 @@ bazel_dep(name = "buildifier_prebuilt", version = "8.2.1", dev_dependency = True
 bazel_dep(name = "bazelrc-preset.bzl", version = "1.6.0")
 
 bazel_lib_toolchains = use_extension("@bazel_lib//lib:extensions.bzl", "toolchains")
+bazel_lib_toolchains.copy_directory()
 bazel_lib_toolchains.copy_to_directory()
-use_repo(bazel_lib_toolchains, "copy_to_directory_toolchains")
+use_repo(
+    bazel_lib_toolchains,
+    "copy_directory_toolchains",
+    "copy_to_directory_toolchains",
+)
+
+register_toolchains("@copy_directory_toolchains//:all")
 
 register_toolchains("@copy_to_directory_toolchains//:all")

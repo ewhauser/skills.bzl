@@ -9,21 +9,43 @@ fi
 
 resolve_input_path() {
   local candidate="$1"
+  local normalized="$1"
   local script_dir
 
-  if [[ -e "${candidate}" ]]; then
+  if [[ "${normalized}" == ./* ]]; then
+    normalized="${normalized#./}"
+  fi
+
+  if [[ -n "${RUNFILES_DIR:-}" && -e "${RUNFILES_DIR}/_main/${normalized}" ]]; then
+    candidate="${RUNFILES_DIR}/_main/${normalized}"
+    if [[ -d "${candidate}" ]]; then
+      candidate="$(cd "${candidate}" && pwd -P)"
+    else
+      candidate="$(cd "$(dirname "${candidate}")" && pwd -P)/$(basename "${candidate}")"
+    fi
     echo "${candidate}"
     return 0
   fi
 
-  if [[ -n "${RUNFILES_DIR:-}" && -e "${RUNFILES_DIR}/_main/${candidate}" ]]; then
-    echo "${RUNFILES_DIR}/_main/${candidate}"
+  script_dir="$(cd "$(dirname "$0")" && pwd)"
+  if [[ -e "${script_dir}.runfiles/_main/${normalized}" ]]; then
+    candidate="${script_dir}.runfiles/_main/${normalized}"
+    if [[ -d "${candidate}" ]]; then
+      candidate="$(cd "${candidate}" && pwd -P)"
+    else
+      candidate="$(cd "$(dirname "${candidate}")" && pwd -P)/$(basename "${candidate}")"
+    fi
+    echo "${candidate}"
     return 0
   fi
 
-  script_dir="$(cd "$(dirname "$0")" && pwd)"
-  if [[ -e "${script_dir}.runfiles/_main/${candidate}" ]]; then
-    echo "${script_dir}.runfiles/_main/${candidate}"
+  if [[ -e "${candidate}" ]]; then
+    if [[ -d "${candidate}" ]]; then
+      candidate="$(cd "${candidate}" && pwd -P)"
+    else
+      candidate="$(cd "$(dirname "${candidate}")" && pwd -P)/$(basename "${candidate}")"
+    fi
+    echo "${candidate}"
     return 0
   fi
 
@@ -35,7 +57,6 @@ destination_rel="$2"
 manifest="$(resolve_input_path "$3")"
 workspace_dir="${BUILD_WORKSPACE_DIRECTORY:-$(pwd)}"
 destination_dir="${workspace_dir}/${destination_rel}"
-state_file="${destination_dir}/.skills_bzl_managed"
 
 if [[ ! -d "${staged_tree}" ]]; then
   echo "staged skills tree not found: ${staged_tree}" >&2
@@ -53,26 +74,46 @@ remove_skill_dir() {
   fi
 }
 
-if [[ -f "${state_file}" ]]; then
-  while IFS= read -r skill; do
-    [[ -z "${skill}" ]] && continue
-    remove_skill_dir "${skill}"
-  done < "${state_file}"
-fi
+resolve_staged_skill_dir() {
+  local skill="$1"
+  local candidate=""
 
-mapfile -t skills < <(grep -v '^$' "${manifest}" | LC_ALL=C sort)
+  if [[ -d "${staged_tree}/${skill}" ]]; then
+    echo "${staged_tree}/${skill}"
+    return 0
+  fi
+
+  while IFS= read -r path; do
+    [[ -z "${path}" ]] && continue
+    if [[ -n "${candidate}" ]]; then
+      echo "multiple staged directories found for skill '${skill}'" >&2
+      return 1
+    fi
+    candidate="${path}"
+  done < <(find "${staged_tree}" -type d -name "${skill}" | LC_ALL=C sort)
+
+  if [[ -z "${candidate}" ]]; then
+    return 1
+  fi
+
+  echo "${candidate}"
+}
+
+declare -a skills=()
+while IFS= read -r skill; do
+  [[ -z "${skill}" ]] && continue
+  skills+=("${skill}")
+done < <(grep -v '^$' "${manifest}" | LC_ALL=C sort)
 
 for skill in "${skills[@]}"; do
   remove_skill_dir "${skill}"
 done
 
 for skill in "${skills[@]}"; do
-  if [[ ! -d "${staged_tree}/${skill}" ]]; then
-    echo "expected staged skill directory missing: ${staged_tree}/${skill}" >&2
+  skill_src="$(resolve_staged_skill_dir "${skill}")" || {
+    echo "expected staged skill directory missing for skill '${skill}' under ${staged_tree}" >&2
     exit 1
-  fi
-  cp -R "${staged_tree}/${skill}" "${destination_dir}/${skill}"
+  }
+  cp -R "${skill_src}" "${destination_dir}/${skill}"
   chmod -R u+rwX "${destination_dir}/${skill}" 2>/dev/null || true
 done
-
-printf "%s\n" "${skills[@]}" > "${state_file}"

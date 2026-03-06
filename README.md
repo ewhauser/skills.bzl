@@ -39,6 +39,10 @@ This creates:
 - `:claude_skills.sync` - copy staged managed skills into the source tree
 - `:claude_skills.sync_test` - fail if the source tree is missing or stale
 
+Sync is additive-only. It refreshes the skills currently declared in Bazel and leaves
+removed or renamed previously-synced skill directories in place until you delete them
+manually.
+
 ## Lockfile
 
 Example:

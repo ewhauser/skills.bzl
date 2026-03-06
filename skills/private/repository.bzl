@@ -4,6 +4,8 @@ load("//skills/private:lockfile.bzl", "decode_lockfile_text")
 
 def _root_build(skill_names):
     lines = [
+        "load(\"@bazel_lib//lib:copy_to_directory.bzl\", \"copy_to_directory\")",
+        "",
         "package(default_visibility = [\"//visibility:public\"])",
         "",
         "exports_files([\"skill_names.txt\", \"skills_manifest.json\"])",
@@ -11,6 +13,17 @@ def _root_build(skill_names):
         "filegroup(",
         "    name = \"all_skill_trees\",",
         "    srcs = [%s]," % ", ".join(["\"//raw/%s:tree\"" % skill_name for skill_name in skill_names]),
+        ")",
+        "",
+        "copy_to_directory(",
+        "    name = \"all_skills_tree\",",
+        "    srcs = [%s]," % ", ".join(["\"//raw/%s:tree\"" % skill_name for skill_name in skill_names]),
+        "    out = \"all_skills_tree\",",
+        "    root_paths = [\"raw\"],",
+        "    replace_prefixes = {%s}," % ", ".join([
+            "\"%s/tree\": \"%s\"" % (skill_name, skill_name)
+            for skill_name in skill_names
+        ]),
         ")",
         "",
     ]
@@ -26,20 +39,14 @@ def _root_build(skill_names):
     return "\n".join(lines)
 
 def _skill_build():
-    return """load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+    return """load("@bazel_lib//lib:copy_directory.bzl", "copy_directory")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "files",
-    srcs = glob(["src/**"], allow_empty = False),
-)
-
-copy_to_directory(
+copy_directory(
     name = "tree",
-    srcs = [":files"],
+    src = "src",
     out = "tree",
-    root_paths = ["src"],
 )
 """
 

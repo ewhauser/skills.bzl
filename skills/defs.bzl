@@ -1,5 +1,6 @@
 """Public macros for staging and syncing vendored skills."""
 
+load("@bazel_lib//lib:copy_directory.bzl", "copy_directory")
 load("@bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
@@ -91,11 +92,10 @@ def skill_install(name, destination = None, skills = None, skills_repo = "skills
         fail("skill_install requires an explicit skills list when patches or overlays are used")
 
     if not skills:
-        copy_to_directory(
+        copy_directory(
             name = name,
-            srcs = ["@%s//:all_skill_trees" % skills_repo],
+            src = "@%s//:all_skills_tree" % skills_repo,
             out = name,
-            allow_overwrites = False,
             visibility = visibility,
             tags = tags,
         )
