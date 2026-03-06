@@ -22,9 +22,11 @@ license(
 gazelle_binary(
     name = "gazelle_bin",
     languages = ["@bazel_skylib_gazelle_plugin//bzl"],
+    tags = ["manual"],
 )
 
 gazelle(
     name = "gazelle",
     gazelle = "gazelle_bin",
+    tags = ["manual"],
 )

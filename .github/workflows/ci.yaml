@@ -25,6 +25,7 @@ jobs:
       exclude: |
         [
           {"folder": ".", "bzlmodEnabled": false},
+          {"folder": "e2e/smoke", "bzlmodEnabled": false},
           {"folder": ".", "bazelVersion": "6.4.0"}
         ]
   pre-commit:

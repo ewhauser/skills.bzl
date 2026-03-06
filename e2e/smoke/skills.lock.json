@@ -1,0 +1,19 @@
+{
+  "$schema": "../../skills.lock.schema.json",
+  "repositories": {
+    "openai_skills": {
+      "kind": "github_archive",
+      "owner": "openai",
+      "repo": "skills",
+      "commit": "ce2535c009ef92f4065be9626ae695c9ecd77e61",
+      "sha256": "06e0b1b8934cb4ccdbad1f2efc4b21cb26f012333e0a68d791cdccc9236c1170",
+      "strip_prefix": "skills-ce2535c009ef92f4065be9626ae695c9ecd77e61",
+      "entries": {
+        "screenshot": {
+          "path": "skills/.curated/screenshot",
+          "type": "skill"
+        }
+      }
+    }
+  }
+}

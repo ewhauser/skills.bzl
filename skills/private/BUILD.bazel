@@ -1,0 +1,25 @@
+load("@bazel_lib//:bzl_library.bzl", "bzl_library")
+
+exports_files([
+    "sync_skills.sh",
+    "verify_sync.sh",
+])
+
+bzl_library(
+    name = "lockfile",
+    srcs = ["lockfile.bzl"],
+    visibility = ["//skills:__subpackages__"],
+)
+
+bzl_library(
+    name = "repository",
+    srcs = ["repository.bzl"],
+    visibility = ["//skills:__subpackages__"],
+    deps = [":lockfile"],
+)
+
+bzl_library(
+    name = "stage",
+    srcs = ["stage.bzl"],
+    visibility = ["//skills:__subpackages__"],
+)

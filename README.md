@@ -1,52 +1,78 @@
-# Template for Bazel rules
+# skills.bzl
 
-Copy this template to create a Bazel ruleset.
+Bazel 9+ rules for vendoring agent skills from pinned upstream repositories.
 
-Features:
+`skills.bzl` is built around a checked-in lockfile. A consumer repo pins upstream
+archives in `skills.lock.json`, loads the module extension, and gets raw skill
+tree targets like `@skills//raw/screenshot:tree`. Those raw trees can then be:
 
-- follows the official style guide at https://bazel.build/rules/deploying
-- allows for both WORKSPACE.bazel and bzlmod (MODULE.bazel) usage
-- includes Bazel formatting as a pre-commit hook (using [buildifier])
-- includes API documentation generation
-- includes typical toolchain setup
-- CI configured with GitHub Actions
-- release using GitHub Actions just by pushing a tag
-- the release artifact doesn't need to be built by Bazel, but can still exclude files and stamp the version
+- consumed directly as Bazel artifacts
+- patched or overlaid in the build graph
+- staged into an install tree
+- synced back into `.claude/skills` or another source-tree directory
 
-Ready to get started? Copy this repo, then
+## bzlmod
 
-1. search for "com_myorg_rules_mylang" and replace with the name you'll use for your workspace
-1. search for "myorg" and replace with GitHub org
-1. search for "mylang", "Mylang", "MYLANG" and replace with the language/tool your rules are for
-1. rename directory "mylang" similarly
-1. run `pre-commit install` to get lints (see CONTRIBUTING.md)
-1. if you don't need to fetch platform-dependent tools, then remove anything toolchain-related.
-1. (optional) install the [Renovate app](https://github.com/apps/renovate) to get auto-PRs to keep the dependencies up-to-date.
-1. delete this section of the README (everything up to the SNIP).
+```starlark
+bazel_dep(name = "skills.bzl", version = "...")
 
-Optional: if you write tools for your rules to call, you should avoid toolchain dependencies for those tools leaking to all users.
-For example, https://github.com/aspect-build/rules_py actions rely on a couple of binaries written in Rust, but we don't want users to be forced to
-fetch a working Rust toolchain. Instead we want to ship pre-built binaries on our GH releases, and the ruleset fetches these as toolchains.
-See https://blog.aspect.build/releasing-bazel-rulesets-rust for information on how to do this.
-Note that users who _do_ want to build tools from source should still be able to do so, they just need to register a different toolchain earlier.
+skills = use_extension("@skills.bzl//skills:extensions.bzl", "skills")
+skills.hub(lockfile = "//:skills.lock.json")
+use_repo(skills, "skills")
+```
 
----- SNIP ----
+Stage a subset of skills:
 
-# Bazel rules for mylang
+```starlark
+load("@skills.bzl//skills:defs.bzl", "skill_install")
 
-## Installation
+skill_install(
+    name = "claude_skills",
+    destination = ".claude/skills",
+    skills = ["screenshot"],
+)
+```
 
-From the release you wish to use:
-<https://github.com/myorg/rules_mylang/releases>
-copy the WORKSPACE snippet into your `WORKSPACE` file.
+This creates:
 
-To use a commit rather than a release, you can point at any SHA of the repo.
+- `:claude_skills` - staged install tree
+- `:claude_skills.sync` - copy staged managed skills into the source tree
+- `:claude_skills.sync_test` - fail if the source tree is missing or stale
 
-For example to use commit `abc123`:
+## Lockfile
 
-1. Replace `url = "https://github.com/myorg/rules_mylang/releases/download/v0.1.0/rules_mylang-v0.1.0.tar.gz"` with a GitHub-provided source archive like `url = "https://github.com/myorg/rules_mylang/archive/abc123.tar.gz"`
-1. Replace `strip_prefix = "rules_mylang-0.1.0"` with `strip_prefix = "rules_mylang-abc123"`
-1. Update the `sha256`. The easiest way to do this is to comment out the line, then Bazel will
-   print a message with the correct value. Note that GitHub source archives don't have a strong
-   guarantee on the sha256 stability, see
-   <https://github.blog/2023-02-21-update-on-the-future-stability-of-source-code-archives-and-hashes/>
+Example:
+
+```json
+{
+  "$schema": "./skills.lock.schema.json",
+  "repositories": {
+    "openai_skills": {
+      "kind": "github_archive",
+      "owner": "openai",
+      "repo": "skills",
+      "commit": "ce2535c009ef92f4065be9626ae695c9ecd77e61",
+      "sha256": "06e0b1b8934cb4ccdbad1f2efc4b21cb26f012333e0a68d791cdccc9236c1170",
+      "strip_prefix": "skills-ce2535c009ef92f4065be9626ae695c9ecd77e61",
+      "entries": {
+        "screenshot": {
+          "path": "skills/.curated/screenshot"
+        }
+      }
+    }
+  }
+}
+```
+
+## Patch and overlay flow
+
+`skill_install` accepts:
+
+- `patches = {"skill-name": ["//path:change.diff"]}`
+- `overlays = {"skill-name": ["//path:overlay_tree"]}`
+
+Patch files are applied first with `patch -p1`. Overlay trees are copied last
+and win on path conflicts.
+
+Overlay labels must provide a single tree artifact rooted at the skill
+directory. A simple way to build one is with `@bazel_lib//lib:copy_to_directory.bzl`.

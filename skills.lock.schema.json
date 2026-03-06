@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ewhauser/skills.bzl/skills.lock.schema.json",
+  "title": "skills.bzl lockfile",
+  "type": "object",
+  "required": ["repositories"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "repositories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["owner", "repo", "commit", "sha256", "strip_prefix", "entries"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["github_archive"]
+          },
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "strip_prefix": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["path"],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["bundle", "skill"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,9 @@
 # smoke test
 
-This e2e exercises the repo from an end-users perspective.
-It catches mistakes in our install instructions, or usages that fail when called from an "external" repository to rules_mylang.
-It is also used by the presubmit check for the Bazel Central Registry.
+This e2e exercises `skills.bzl` from an end-user Bazel module.
+
+It verifies that:
+
+- a lockfile can materialize the `@skills` repo under bzlmod
+- a raw skill tree target can be built from that repo
+- `skill_install` can stage and sync an install tree
